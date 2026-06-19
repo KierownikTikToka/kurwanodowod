@@ -1,27 +1,100 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <title>ten dowod robilem sam kurwy</title>
+﻿(() => {
+  const storageKey = "demo-panel-state-v1";
+  const defaultState = {
+    theme: "light",
+    profile: {
+      name: "Tester",
+      role: "lokalne demo",
+      accent: "#2563eb"
+    },
+    token: ""
+  };
 
- <link rel="stylesheet" href="css/main.css">
-<link rel="stylesheet" href="css/common.css">
-<link rel="stylesheet" href="css/index.css">
-<link rel="stylesheet" href="css/overlay-camera.css">
-<link rel="stylesheet" href="css/theme.css">
-<link rel="stylesheet" href="css/guard.css">
-</head>  
-  
-<body>
-  <h1> o boze nawet dziala XD</h1>
-  <button onclick="klik()">Klik</button>  
+  const modules = [
+    {
+      title: "Profil demo",
+      description: "Zapisuje nazwę, opis i kolor akcentu w localStorage.",
+      target: "settings"
+    },
+    {
+      title: "Kod testowy",
+      description: "Generuje lokalny wzór i losowy token bez zewnętrznych usług.",
+      target: "code"
+    },
+    {
+      title: "Motyw",
+      description: "Przełącza jasny i ciemny wygląd, a wybór zostaje zapamiętany.",
+      action: "theme"
+    },
+    {
+      title: "Wyszukiwarka",
+      description: "Filtruje moduły po nazwie i opisie bez przeładowania strony.",
+      target: "modules"
+    },
+    {
+      title: "Status live",
+      description: "Aktualizuje zegar i podsumowanie stanu aplikacji.",
+      target: "home"
+    },
+    {
+      title: "Reset danych",
+      description: "Czyści lokalny stan demo i przywraca wartości początkowe.",
+      action: "reset"
+    }
+  ];
 
-  <script src="guard.js"></script>
-  <script src="header.js"></script>
-  <script src="index.js"></script>
-  <script src="navigation.js"></script>
-  <script src="orzel.js"></script>
-  <script src="qrcode.min.js"></script>
-  <script src="theme.js"></script>
- <script src="theme-init.js"></script>
-</body>
-</html>  
+  let state = loadState();
+  const els = {};
+
+  document.addEventListener("DOMContentLoaded", () => {
+    bindElements();
+    applyState();
+    renderModules();
+    bindEvents();
+    generateToken(false);
+    updateClock();
+    setInterval(updateClock, 1000);
+  });
+
+  function bindElements() {
+    els.html = document.documentElement;
+    els.tabs = [...document.querySelectorAll("[data-view-link]")];
+    els.views = [...document.querySelectorAll("[data-view]")];
+    els.themeToggle = document.getElementById("themeToggle");
+    els.moduleGrid = document.getElementById("moduleGrid");
+    els.moduleSearch = document.getElementById("moduleSearch");
+    els.form = document.getElementById("profileForm");
+    els.reset = document.getElementById("resetApp");
+    els.regenerate = document.getElementById("regenerateCode");
+    els.copy = document.getElementById("copyToken");
+    els.token = document.getElementById("demoToken");
+    els.canvas = document.getElementById("demoCanvas");
+    els.toast = document.getElementById("toast");
+    els.clock = document.getElementById("clockText");
+    els.moduleCount = document.getElementById("moduleCount");
+    els.profileStatus = document.getElementById("profileStatus");
+    els.themeStatus = document.getElementById("themeStatus");
+  }
+
+  function bindEvents() {
+    els.tabs.forEach((tab) => {
+      tab.addEventListener("click", (event) => {
+        event.preventDefault();
+        switchView(tab.dataset.viewLink);
+      });
+    });
+
+    els.themeToggle.addEventListener("click", toggleTheme);
+    els.moduleSearch.addEventListener("input", renderModules);
+    els.regenerate.addEventListener("click", () => generateToken(true));
+    els.copy.addEventListener("click", copyToken);
+    els.reset.addEventListener("click", resetState);
+
+    els.form.addEventListener("submit", (event) => {
+      event.preventDefault();
+      const data = new FormData(els.form);
+      state.profile = {
+        name: String(data.get("name") || "Tester").trim() || "Tester",
+        role: String(data.get("role") || "lokalne demo").trim() || "lokalne demo",
+        accent: String(data.get("accent") || "#2563eb")
+      };
